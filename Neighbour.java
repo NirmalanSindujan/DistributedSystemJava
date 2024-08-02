@@ -7,6 +7,7 @@ class Neighbour{
 	private int port;
 	private String username;
 	private List<Neighbour> nodes = new ArrayList<Neighbour>();
+	private boolean isJoined = false;
 	String[] filenames ;
 
 
@@ -39,11 +40,43 @@ class Neighbour{
 
 	public void setNodes(Neighbour node) {
 		System.out.println(nodes);
+		this.isJoined = true;
 		this.nodes.add(node);
 	}
 
 	public void setFilenames(String[] filenames) {
 		System.out.println("SET FILES FILENAME :" + Arrays.toString(filenames));
 		this.filenames = filenames;
+	}
+
+	public String search(String filename,int hopCount){
+		System.out.println("Searching in Node"+ this.ip);
+		System.out.println("Searching File Name"+ filename);
+
+
+
+
+		if (hopCount <= 0) {
+			return null;
+		}
+
+		// Search in local filenames array
+		for (String file : filenames) {
+			System.out.println("My Files"+ file);
+
+			if (file.equals(filename)) {
+				return this.ip;
+			}
+		}
+
+		// Search in neighboring nodes
+		for (Neighbour neighbor : nodes) {
+			String result = neighbor.search(filename, hopCount - 1);
+			if (result != null) {
+				return result;
+			}
+		}
+
+		return null;
 	}
 }

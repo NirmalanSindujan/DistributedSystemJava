@@ -10,28 +10,29 @@ public class BootstrapServer {
         DatagramSocket sock = null;
         String s;
         List<Neighbour> nodes = new ArrayList<Neighbour>();
+        List<Neighbour> joinedNodes = new ArrayList<Neighbour>();
 
         String[] filenames = {
-                "Adventures of Tintin",
-                "Jack and Jill",
+                "Adventures_of_Tintin",
+                "Jack_and_Jill",
                 "Glee",
-                "The Vampire Diaries",
-                "King Arthur",
-                "Windows XP",
-                "Harry Potter",
-                "Kung Fu Panda",
-                "Lady Gaga",
+                "The_Vampire Diaries",
+                "King_Arthur",
+                "Windows_XP",
+                "Harry_Potter",
+                "Kung_Fu_Panda",
+                "Lady_Gaga",
                 "Twilight",
-                "Windows 8",
-                "Mission Impossible",
-                "Turn Up The Music",
-                "Super Mario",
-                "American Pickers",
-                "Microsoft Office 2010",
-                "Happy Feet",
-                "Modern Family",
-                "American Idol",
-                "Hacking for Dummies"
+                "Windows_8",
+                "Mission_Impossible",
+                "Turn_Up_The_Music",
+                "Super_Mario",
+                "American_Pickers",
+                "Microsoft_Office_2010",
+                "Happy_Feet",
+                "Modern_Family",
+                "American_Idol",
+                "Hacking_for_Dummies"
         };
 
         try
@@ -148,31 +149,72 @@ public class BootstrapServer {
                     String reply = "0012 PRINTNODE 0";
                     DatagramPacket dpReply = new DatagramPacket(reply.getBytes() , reply.getBytes().length , incoming.getAddress() , incoming.getPort());
                     sock.send(dpReply);
+
+
+
+
+
                 }else if (command.equals("JOIN")) {
                     String ip = st.nextToken();
-                    Neighbour node = null;     // Temp Node
+                    Neighbour joinTempNode = null;     // Temp Node
                     boolean isNodeExisting = false;
                     System.out.println("JOIN IP ADDRESS:"+ip);
 
+                    //Checking node is already registered or Not
                     for (int i=0; i<nodes.size(); i++) {
                         if (nodes.get(i).getIp().equals(ip)) {
                             isNodeExisting = true;
-                            node = nodes.get(i);
+                            joinTempNode = nodes.get(i);
                             break;
                         }
                     }
 
                     if(isNodeExisting){ // Node validation to check node is already registered or not
                         String[] sharingFiles = getRandomStrings(filenames, 4); // Randomly get 4 files in the list to share
-                        Random r = new Random();
-                        int Low = 0;
-                        int High = nodes.size();
-                        int random_1 = r.nextInt(High-Low) + Low;
-                        int random_2 = r.nextInt(High-Low) + Low;
+                        String reply = "JOIN OK ";
+                        if (joinedNodes.isEmpty()){
+                            joinTempNode.setFilenames(sharingFiles);
+                            joinedNodes.add(joinTempNode);
+                            reply += "NODE JOINED SUCCESSFULLY SINGLE NODE";
+                        }else if(joinedNodes.size() == 1) {
+                            joinTempNode.setFilenames(sharingFiles);
+                            joinTempNode.setNodes(joinedNodes.getFirst());
+                            joinedNodes.add(joinTempNode);
 
-                        node.setFilenames(sharingFiles);
-                        node.setNodes(nodes.get(random_1));
-                        node.setNodes(nodes.get(random_2));
+                            reply += "SINGLE NODE EXISTING";
+                        } else if (joinedNodes.size() == 2) {
+                            joinTempNode.setFilenames(sharingFiles);
+                            joinTempNode.setNodes(nodes.getFirst());
+                            joinTempNode.setNodes(nodes.get(1));
+                            joinedNodes.add(joinTempNode);
+
+                            reply += "TWO NODES JOINED";
+
+                        }else {
+
+                            Random r = new Random();
+                            int Low = 0;
+                            int High = nodes.size();
+                            int random_1 = r.nextInt(High - Low) + Low;
+                            int random_2 = r.nextInt(High - Low) + Low;
+                            while (nodes.get(random_1) == joinTempNode){
+                                random_1 = r.nextInt(High-Low) + Low;
+                            }
+                            while (nodes.get(random_2) == joinTempNode){
+                                random_2 = r.nextInt(High-Low) + Low;
+                            }
+                            while (random_1 == random_2) {
+                                random_2 = r.nextInt(High-Low) + Low;
+                            }
+
+                            joinTempNode.setFilenames(sharingFiles);
+                            joinTempNode.setNodes(nodes.get(random_1));
+                            joinTempNode.setNodes(nodes.get(random_2));
+                        }
+
+
+                        DatagramPacket dpReply = new DatagramPacket(reply.getBytes() , reply.getBytes().length , incoming.getAddress() , incoming.getPort());
+                        sock.send(dpReply);
 
                     }else{
                         echo("Node Not Registered ");
@@ -181,6 +223,28 @@ public class BootstrapServer {
                         sock.send(dpReply);
                     }
 
+
+                }else if (command.equals("SEARCH")) {
+                    String ip = st.nextToken();
+                    String searchValue = st.nextToken();
+                    Neighbour searchSourceNode = null;     // Temp Node
+                    boolean isNodeExisting = false;
+                    System.out.println("SEARCH IP ADDRESS:"+ip);
+
+                    //Checking node is already registered or Not
+                    for (int i=0; i<joinedNodes.size(); i++) {
+                        if (joinedNodes.get(i).getIp().equals(ip)) {
+                            isNodeExisting = true;
+                            searchSourceNode = nodes.get(i);
+                            break;
+                        }
+                    }
+
+                    if(isNodeExisting){
+                       String foundIp =  searchSourceNode.search(searchValue,5);
+                        System.out.println("Found File in:"+foundIp);
+
+                    }
 
                 }else{
                     echo("Wrong Command");
